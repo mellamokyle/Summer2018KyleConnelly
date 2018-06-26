@@ -25,8 +25,6 @@ https://www.gitkraken.com
 Login and authenticate with GitHub  
 https://support.gitkraken.com/integrations/github
 
-woo
-
 ## Install command line utility (optional)
 https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
