@@ -39,7 +39,7 @@ piecewiseCoeffsWLinear[nPts_, data_]:=
 		{LeastSquares[basisMat, fixedData[[All, 2]]], Abs[linFit["BestFitParameters"][[2]]*dom]}
 	]
 
-membership[x_, width_] := Piecewise[{{x/width + 1, -width <= x <= 0}, {1, 0 <= x <= width}, {-x/width + 2, width <= x <= 2 width}}]
+membership[x_, width_] := Ramp[x/width + 1] - UnitStep[x]Ramp[x/width] - UnitStep[x-width]Ramp[x/width - 1] + UnitStep[x-2width]Ramp[x/width - 2]
 classify[x_, n_, min_, max_]:= 
 	With[{range = max - min},
 		membership[x - (#-1.)/(n) range - min, range/(n)]&/@Range[n]
@@ -85,8 +85,16 @@ wordify[semantics_]:=
 		secondPass = {Replace[Replace[firstPass, heightWords, {2}], lengthWords, All], semantics[[2]]}
 	]
 
+ratioDesc[x_] := 
+	Piecewise[{{"Strong upward trend", x >= 4}, 
+			    {"Upward trend", 2 <= x < 4}, 
+				{"Flat", 12 <= x < 2}, 
+				{"Downward trend", -4 <= x < -2}, 
+				{"Strong downward trend", x < -4}}
+	]
+
 dataToWords[data_, detail_]:=
-	Block[{info, lengthWords, coeffs},
+	Block[{info, lengthWords, coeffs, secondPass, firstPass},
 		coeffs = piecewiseCoeffsWLinear[detail, data];
 		info = Map[classify[#, 7, Min@coeffs[[1]], Max@coeffs[[1]]]&, coeffs[[1]]];
 		info = Map[(Range[13]-7).#&, Map[delta[info[[#]], info[[#+1]]]&, Range[Length@info-1]]];
@@ -94,18 +102,22 @@ dataToWords[data_, detail_]:=
 		info = Apply[{#1, classify[#2, 5, Min[info[[All,2]]], Max[info[[All,2]]]]}&, info, {1}];
 		info = Apply[{#1, Position[#2,Max@#2][[1]]-3}&, info, {1}];
 		lengthWords = lengthWordsTemplate[detail];
-		firstPass = SequenceReplace[info, {Repeated[{{_, {2}}, {_, {-2}}}, {2, Infinity}]-> "large oscillation", 
-												Repeated[{{_, {-2}}, {_, {2}}}, {2, Infinity}]-> "large oscillation",
-												Repeated[{{_, {1}}, {_, {-1}}}, {2, Infinity}]-> "small oscillation",
-												Repeated[{{_, {-1}}, {_, {1}}}, {2, Infinity}]-> "small oscillation",   
-												{{_, {2}}, RepeatedNull[{1|2, {-1|0|1}}, 1], {_, {-2}}}-> "peak", 
+		firstPass = SequenceReplace[info, {Repeated[{{_, {2}}, {_, {-2}}}, {2, Infinity}]-> "Large oscillation", 
+												Repeated[{{_, {-2}}, {_, {2}}}, {2, Infinity}]-> "Large oscillation",
+												Repeated[{{_, {1}}, {_, {-1}}}, {2, Infinity}]-> "Small oscillation",
+												Repeated[{{_, {-1}}, {_, {1}}}, {2, Infinity}]-> "Small oscillation",   
+												{{_, {2}}, RepeatedNull[{1|2, {-1|0|1}}, 1], {_, {-2}}}-> "Peak", 
 												{{_, {-2}}, RepeatedNull[{1|2, {-1|0|1}}, 1], 
-												{_, {2}}} -> "valley"}];
-		{Replace[Replace[firstPass, heightWords, {2}], lengthWords, All], coeffs[[2]]/Max[Abs[coeffs[[1]]]]}
+												{_, {2}}} -> "Valley"}];
+		secondPass = Replace[Replace[firstPass, heightWords, {2}], lengthWords, All];
+		Join[Quiet[secondPass /. {a_String,b_String}->a<> " of "<>b], {ratioDesc[coeffs[[2]]/Max[Abs[coeffs[[1]]]]]}]
 	]
 
 End[]
 EndPackage[]
+
+
+
 
 
 
