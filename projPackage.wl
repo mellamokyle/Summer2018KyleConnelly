@@ -10,7 +10,7 @@ dataToWords::usage = "Get words to describe data."
 Begin["`Private`"]
 base[center_, support_, x_] := N[BSplineBasis[3, (1./support)*(x-center) + 1/2]];
 
-piecewiseCoeffs[nPts_, data_]:= 
+piecewiseCoeffs[data_, nPts_]:= 
 	Block[{range, length, basisMat},
 		range = data[[-1,1]] - data[[1,1]];
 		length = Length@data;
@@ -18,7 +18,7 @@ piecewiseCoeffs[nPts_, data_]:=
 		LeastSquares[basisMat, data[[All, 2]]];
 	]
 
-plotPiecewiseFit[nPts_, data_]:=
+plotPiecewiseFit[data_, nPts_]:=
 	Block[{range, length, basisMat, consts},
 		range = data[[-1,1]] - data[[1,1]];
 		length = Length@data;
@@ -29,7 +29,7 @@ plotPiecewiseFit[nPts_, data_]:=
 	
 (*it does not like to have the c.Table stuff returned as a function*)
 
-piecewiseCoeffsWLinear[nPts_, data_]:= 
+piecewiseCoeffsWLinear[data_, nPts_]:= 
 	Block[{dom, length, basisMat, linFit, fixedData},
 		linFit = LinearModelFit[data, xp, xp];
 		fixedData = {#1, #2 - linFit[#1]}&@@@data;
@@ -55,14 +55,14 @@ With [{len = Length@x},
 
 heightWords = <|{-2}-> "fast decline", {-1} -> "slow decline", {0}->"flat", {1}-> "growth", {2}-> "fast growth"|>;
 lengthWordsTemplate[n_] := AssociationThread[Range[n],
-	Join[Table["brief period", {i, Floor[n/10.]}], 
-			Table["period", {i, Floor[n/10.]+1, Floor[n/5.]}], 
-			Table["long period", {i, Floor[n/5.]+1, Floor[n/2.]}], 
-			Table["mostly", {i, Floor[n/2.]+1, n}]]];
+	Join[Table["Brief period", {i, Floor[n/10.]}], 
+			Table["Period", {i, Floor[n/10.]+1, Floor[n/5.]}], 
+			Table["Long period", {i, Floor[n/5.]+1, Floor[n/2.]}], 
+			Table["Mostly", {i, Floor[n/2.]+1, n}]]];
 
 semanticInfo[data_, detail_]:=
 	Block[{info, coeffs},
-		coeffs = piecewiseCoeffsWLinear[detail, data];
+		coeffs = piecewiseCoeffsWLinear[data, detail];
 		info = Map[classify[#, 7, Min@coeffs[[1]], Max@coeffs[[1]]]&, coeffs[[1]]];
 		info = Map[(Range[13]-7).#&, Map[delta[info[[#]], info[[#+1]]]&, Range[Length@info-1]]];
 		info = Map[Round, Map[{Length[#], Mean[#]}&, Split[info, (Abs[#1- #2] <=  2.1)&]]];
@@ -95,7 +95,7 @@ ratioDesc[x_] :=
 
 dataToWords[data_, detail_]:=
 	Block[{info, lengthWords, coeffs, secondPass, firstPass},
-		coeffs = piecewiseCoeffsWLinear[detail, data];
+		coeffs = piecewiseCoeffsWLinear[data, detail];
 		info = Map[classify[#, 7, Min@coeffs[[1]], Max@coeffs[[1]]]&, coeffs[[1]]];
 		info = Map[(Range[13]-7).#&, Map[delta[info[[#]], info[[#+1]]]&, Range[Length@info-1]]];
 		info = Map[Round, Map[{Length[#], Mean[#]}&, Split[info, (Abs[#1- #2] <=  2.1)&]]];
