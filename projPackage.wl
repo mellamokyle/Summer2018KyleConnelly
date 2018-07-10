@@ -5,7 +5,7 @@ BeginPackage["TimeSeriesDescription`"]
 semanticInfo::usage = "Get semantic information of graph, in numerical form:
 						{{{length, {relative slope}}, ..., {length, {relative slope}}}, global trend ratio}"
 plotPiecewiseFit::usage = "Calculate fit of piecewise polynomials and plot it."
-wordify::usage = "Turn numerical semantic information into words - 'oscillation', 'peak', 'valley', and words describing slope and duration of straight segements"
+dataToWords::usage = "Get words to describe data."
 
 Begin["`Private`"]
 base[center_, support_, x_] := N[BSplineBasis[3, (1./support)*(x-center) + 1/2]];
@@ -83,6 +83,25 @@ wordify[semantics_]:=
 												{_, {2}}} -> "valley"}];
 												
 		secondPass = {Replace[Replace[firstPass, heightWords, {2}], lengthWords, All], semantics[[2]]}
+	]
+
+dataToWords[data_, detail_]:=
+	Block[{info, lengthWords, coeffs},
+		coeffs = piecewiseCoeffsWLinear[detail, data];
+		info = Map[classify[#, 7, Min@coeffs[[1]], Max@coeffs[[1]]]&, coeffs[[1]]];
+		info = Map[(Range[13]-7).#&, Map[delta[info[[#]], info[[#+1]]]&, Range[Length@info-1]]];
+		info = Map[Round, Map[{Length[#], Mean[#]}&, Split[info, (Abs[#1- #2] <=  2.1)&]]];
+		info = Apply[{#1, classify[#2, 5, Min[info[[All,2]]], Max[info[[All,2]]]]}&, info, {1}];
+		info = Apply[{#1, Position[#2,Max@#2][[1]]-3}&, info, {1}];
+		lengthWords = lengthWordsTemplate[detail];
+		firstPass = SequenceReplace[info, {Repeated[{{_, {2}}, {_, {-2}}}, {2, Infinity}]-> "large oscillation", 
+												Repeated[{{_, {-2}}, {_, {2}}}, {2, Infinity}]-> "large oscillation",
+												Repeated[{{_, {1}}, {_, {-1}}}, {2, Infinity}]-> "small oscillation",
+												Repeated[{{_, {-1}}, {_, {1}}}, {2, Infinity}]-> "small oscillation",   
+												{{_, {2}}, RepeatedNull[{1|2, {-1|0|1}}, 1], {_, {-2}}}-> "peak", 
+												{{_, {-2}}, RepeatedNull[{1|2, {-1|0|1}}, 1], 
+												{_, {2}}} -> "valley"}];
+		{Replace[Replace[firstPass, heightWords, {2}], lengthWords, All], coeffs[[2]]/Max[Abs[coeffs[[1]]]]}
 	]
 
 End[]
