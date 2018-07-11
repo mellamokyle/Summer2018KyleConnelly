@@ -6,8 +6,11 @@ semanticInfo::usage = "Get semantic information of graph, in numerical form:
 						{{{length, {relative slope}}, ..., {length, {relative slope}}}, global trend ratio}"
 plotPiecewiseFit::usage = "Calculate fit of piecewise polynomials and plot it."
 dataToWords::usage = "Get words to describe data."
+fixTimeSeries::usage = "Put time series data into pure numerical form for processing."
 
 Begin["`Private`"]
+fixTimeSeries[ts_] := Apply[{QuantityMagnitude[#1-Normal[stock][[1,1]]], QuantityMagnitude[#2]}&, Normal[ts], 1]
+
 base[center_, support_, x_] := N[BSplineBasis[3, (1./support)*(x-center) + 1/2]];
 
 piecewiseCoeffs[data_, nPts_]:= 
