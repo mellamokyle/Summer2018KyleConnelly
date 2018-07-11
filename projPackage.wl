@@ -9,7 +9,7 @@ dataToWords::usage = "Get words to describe data."
 fixTimeSeries::usage = "Put time series data into pure numerical form for processing."
 
 Begin["`Private`"]
-fixTimeSeries[ts_] := Apply[{QuantityMagnitude[#1-Normal[stock][[1,1]]], QuantityMagnitude[#2]}&, Normal[ts], 1]
+fixTimeSeries[ts_] := Apply[{QuantityMagnitude[#1-Normal[ts][[1,1]]], QuantityMagnitude[#2]}&, Normal[ts], 1]
 
 base[center_, support_, x_] := N[BSplineBasis[3, (1./support)*(x-center) + 1/2]];
 
@@ -118,6 +118,9 @@ dataToWords[data_, detail_]:=
 
 End[]
 EndPackage[]
+
+
+
 
 
 
